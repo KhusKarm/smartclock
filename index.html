@@ -23,7 +23,6 @@
   --t3:rgba(255,255,255,.25);
   --sep:rgba(255,255,255,.08);
   --nh:72px;
-  --ah:52px;
   --st:env(safe-area-inset-top,0px);
   --sb:env(safe-area-inset-bottom,0px);
 }
@@ -62,19 +61,6 @@ input{user-select:text;-webkit-user-select:text;}
 }
 #theme-toggle:active{transform:scale(.85);}
 
-/* ── Ad bar ── */
-#ad-bar{
-  position:fixed;bottom:calc(var(--nh) + var(--sb));left:50%;transform:translateX(-50%);
-  width:100%;max-width:430px;height:var(--ah);
-  background:var(--s2);border-top:.5px solid var(--sep);
-  display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:150;
-  transition:transform .3s ease;
-}
-#ad-bar.hidden{transform:translateX(-50%) translateY(100%);}
-.ad-slot{flex:1;height:40px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);letter-spacing:.4px;border:1px dashed var(--sep);border-radius:6px;margin-right:10px;}
-.ad-free-btn{white-space:nowrap;font-size:11px;font-weight:700;color:var(--a);padding:6px 10px;border:.5px solid rgba(255,159,10,.3);border-radius:8px;cursor:pointer;background:var(--ad);transition:opacity .15s;flex-shrink:0;}
-.ad-free-btn:active{opacity:.6;}
-
 /* ── Nav ── */
 #nav{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -92,8 +78,7 @@ input{user-select:text;-webkit-user-select:text;}
 .nb.active .nb-lbl{color:var(--a);}
 
 /* ── Scroll content ── */
-#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:calc(var(--nh) + var(--sb) + var(--ah) + 16px);}
-.no-ads #content{padding-bottom:calc(var(--nh) + var(--sb) + 16px);}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:calc(var(--nh) + var(--sb) + 16px);}
 #content::-webkit-scrollbar{display:none;}
 
 /* ── Tab panels ── */
@@ -177,7 +162,6 @@ input{user-select:text;-webkit-user-select:text;}
 
 /* ════════ TIMER TAB ════════ */
 #tab-timer{padding-top:calc(max(14px,var(--st)));height:calc(100dvh - var(--nh) - var(--sb));}
-.no-ads #tab-timer{height:calc(100dvh - var(--nh) - var(--sb));}
 
 .t-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding-bottom:2px;position:relative;}
 .t-name{font-size:11px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--t3);flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 44px;}
@@ -287,23 +271,6 @@ input{user-select:text;-webkit-user-select:text;}
 <!-- Theme toggle -->
 <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
 
-<!-- Ad-free modal -->
-<div id="modal">
-  <div class="modal-box">
-    <div class="modal-pill"></div>
-    <div class="modal-title">Go Ad-Free</div>
-    <div class="modal-sub">One-time payment. No subscription. Yours forever.</div>
-    <div class="modal-perks">
-      <div class="perk"><div class="perk-ic">🚫</div><div class="perk-t">No ads, ever</div></div>
-      <div class="perk"><div class="perk-ic">⚡</div><div class="perk-t">Faster, cleaner interface</div></div>
-      <div class="perk"><div class="perk-ic">🙏</div><div class="perk-t">Support an indie developer</div></div>
-    </div>
-    <a href="https://YOUR-PAYMENT-LINK-HERE" target="_blank" style="text-decoration:none;">
-      <div class="modal-cta">Remove Ads — ₹99</div>
-    </a>
-    <div class="modal-cancel" onclick="closeModal()">Maybe later</div>
-  </div>
-</div>
 
 <!-- Preset time picker modal -->
 <div id="preset-modal">
@@ -472,8 +439,9 @@ input{user-select:text;-webkit-user-select:text;}
       <button class="ns-btn sec" onclick="switchTab('presets')">Browse Presets</button>
     </div>
 
-    <div id="tui" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+    <div id="tui" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;">
 
+      <!-- Header row -->
       <div class="t-hdr">
         <div class="t-name" id="t-name">—</div>
         <div class="t-chg" onclick="switchTab('presets')">Change</div>
@@ -482,8 +450,8 @@ input{user-select:text;-webkit-user-select:text;}
       <!-- Reset above ring -->
       <button class="reset-above hidden" id="reset-above" onclick="resetTimer()">↺ Reset</button>
 
-      <!-- Ring -->
-      <div class="rw" id="rw" onclick="toggleTimer()">
+      <!-- Ring pushed high -->
+      <div class="rw" id="rw" onclick="toggleTimer()" style="margin-top:8px;">
         <svg id="rsvg" viewBox="0 0 260 260">
           <circle cx="130" cy="130" r="116" fill="none" stroke="rgba(128,128,128,0.12)" stroke-width="9"/>
           <circle id="rfg" cx="130" cy="130" r="116"
@@ -499,23 +467,17 @@ input{user-select:text;-webkit-user-select:text;}
         </div>
       </div>
 
-      <!-- Banner -->
-      <div class="bn" id="bn"><div class="bn-t" id="bn-t">Tap the ring to begin</div></div>
-
-      <!-- Next milestone -->
-      <div class="nx" id="nx"></div>
-
-      <!-- spacer -->
-      <div style="height:4px;flex-shrink:0;"></div>
+      <!-- Info area below ring -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+        <!-- Next milestone -->
+        <div class="nx" id="nx"></div>
+        <!-- Banner -->
+        <div class="bn" id="bn"><div class="bn-t" id="bn-t">Tap the ring to begin</div></div>
+      </div>
 
     </div>
   </div>
 
-  <!-- Ad bar -->
-  <div id="ad-bar">
-    <div class="ad-slot">Ad · milestonetimer.app</div>
-    <div class="ad-free-btn" onclick="openModal()">Remove Ads</div>
-  </div>
 
   <!-- Nav -->
   <nav id="nav">
@@ -634,24 +596,14 @@ function confirmPreset(){
   setTimeout(()=>startT(),300);
 }
 
-// ── Ad-free ──
-let adFree=localStorage.getItem('mt_adfree')==='1';
-function applyAdFree(){
-  if(adFree){document.getElementById('ad-bar').style.display='none';document.body.classList.add('no-ads');}
-}
-function openModal(){document.getElementById('modal').classList.add('open');}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
-document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-function grantAdFree(){localStorage.setItem('mt_adfree','1');adFree=true;applyAdFree();closeModal();toast('🎉 Ad-free!','Thanks for your support.');}
-
 // ── Ring sizing ──
 function sizeRing(){
   const w=document.getElementById('rw');
-  const sz=Math.min(window.innerWidth-40,280);
+  const sz=Math.min(window.innerWidth-40,300);
   w.style.width=sz+'px';w.style.height=sz+'px';
   document.getElementById('ri').style.width=sz+'px';
   document.getElementById('ri').style.height=sz+'px';
-  document.getElementById('td').style.fontSize=Math.max(48,Math.round(sz*.265))+'px';
+  document.getElementById('td').style.fontSize=Math.max(52,Math.round(sz*.27))+'px';
 }
 window.addEventListener('resize',sizeRing);sizeRing();
 
@@ -661,7 +613,7 @@ function init(){
   document.getElementById('dm').textContent=pad(dM);
   document.getElementById('ds').textContent=pad(dS);
   try{const last=localStorage.getItem('mt_last');if(last){const s=JSON.parse(last);if(s&&s.title&&s.totalSeconds)session=s;}}catch(e){}
-  applyAdFree();applyTheme();
+  applyTheme();
   switchTab('timer');
   renderMsl();renderCustomPresets();
 }
