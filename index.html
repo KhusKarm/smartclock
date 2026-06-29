@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Milestone Timer</title>
+<style>
+/* ── Theme ── */
+:root{
+  --a:#FF9F0A;
+  --ad:rgba(255,159,10,.13);
+  --ag:rgba(255,159,10,.32);
+  --g:#30D158;
+  --r:#FF453A;
+  --bg:#000;
+  --s2:#1C1C1E;
+  --s3:#2C2C2E;
+  --s4:#3A3A3C;
+  --t:#fff;
+  --t2:rgba(255,255,255,.52);
+  --t3:rgba(255,255,255,.25);
+  --sep:rgba(255,255,255,.08);
+  --nh:72px;
+  --ah:52px;
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+}
+body.light{
+  --bg:#F2F2F7;
+  --s2:#fff;
+  --s3:#E5E5EA;
+  --s4:#D1D1D6;
+  --t:#000;
+  --t2:rgba(0,0,0,.52);
+  --t3:rgba(0,0,0,.28);
+  --sep:rgba(0,0,0,.08);
+}
+
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box;-webkit-touch-callout:none;}
+html,body{
+  margin:0;padding:0;background:var(--bg);color:var(--t);
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+  height:100%;overflow:hidden;
+  user-select:none;-webkit-user-select:none;
+  overscroll-behavior:none;
+  transition:background .25s,color .25s;
+}
+input{user-select:text;-webkit-user-select:text;}
+
+#app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;position:relative;overflow:hidden;}
+
+/* ── Theme toggle ── */
+#theme-toggle{
+  position:fixed;top:calc(max(14px,var(--st)));right:16px;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--s3);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;z-index:300;
+  transition:background .2s,transform .2s;
+}
+#theme-toggle:active{transform:scale(.85);}
+
+/* ── Ad bar ── */
+#ad-bar{
+  position:fixed;bottom:calc(var(--nh) + var(--sb));left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;height:var(--ah);
+  background:var(--s2);border-top:.5px solid var(--sep);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:150;
+  transition:transform .3s ease;
+}
+#ad-bar.hidden{transform:translateX(-50%) translateY(100%);}
+.ad-slot{flex:1;height:40px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);letter-spacing:.4px;border:1px dashed var(--sep);border-radius:6px;margin-right:10px;}
+.ad-free-btn{white-space:nowrap;font-size:11px;font-weight:700;color:var(--a);padding:6px 10px;border:.5px solid rgba(255,159,10,.3);border-radius:8px;cursor:pointer;background:var(--ad);transition:opacity .15s;flex-shrink:0;}
+.ad-free-btn:active{opacity:.6;}
+
+/* ── Nav ── */
+#nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;height:calc(var(--nh) + var(--sb));
+  background:var(--bg);
+  border-top:.5px solid var(--sep);
+  display:flex;align-items:flex-start;padding-top:8px;padding-bottom:var(--sb);z-index:200;
+  transition:background .25s;
+}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;cursor:pointer;}
+.nb:active{opacity:.5;}
+.nb-ic{font-size:19px;line-height:1;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+.nb.active .nb-ic{transform:scale(1.2);}
+.nb-lbl{font-size:9.5px;font-weight:600;letter-spacing:.3px;color:var(--t3);transition:color .2s;}
+.nb.active .nb-lbl{color:var(--a);}
+
+/* ── Scroll content ── */
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:calc(var(--nh) + var(--sb) + var(--ah) + 16px);}
+.no-ads #content{padding-bottom:calc(var(--nh) + var(--sb) + 16px);}
+#content::-webkit-scrollbar{display:none;}
+
+/* ── Tab panels ── */
+.tp{display:none;min-height:100%;}
+.tp.active{display:block;}
+#tab-timer{display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:0 20px;overflow:hidden;}
+#tab-timer.active{display:flex;}
+
+/* ── Page titles ── */
+.pg-t{padding:calc(max(16px,var(--st)) + 6px) 20px 2px;font-size:26px;font-weight:700;letter-spacing:-.5px;}
+.pg-s{padding:0 20px 14px;font-size:13px;color:var(--t2);}
+
+/* ════════ PRESETS ════════ */
+#tab-presets{padding-bottom:8px;}
+.pc{margin:0 16px 10px;background:var(--s2);border-radius:16px;overflow:hidden;border:.5px solid var(--sep);cursor:pointer;transition:transform .12s,opacity .12s;}
+.pc:active{transform:scale(.967);opacity:.8;}
+.pc-top{padding:15px 16px;display:flex;align-items:center;gap:13px;}
+.pc-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.pc-inf{flex:1;min-width:0;}
+.pc-tit{font-size:15px;font-weight:600;margin-bottom:2px;}
+.pc-desc{font-size:12px;color:var(--t2);line-height:1.3;}
+.pc-meta{display:flex;gap:7px;align-items:center;margin-top:6px;}
+.pc-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--ad);color:var(--a);}
+.pc-dur{font-size:10px;color:var(--t3);}
+.pc-chev{font-size:18px;color:var(--t3);}
+.pc-chips{border-top:.5px solid var(--sep);padding:9px 16px 11px;display:flex;flex-wrap:wrap;gap:5px;}
+.chip{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--s3);color:var(--t2);}
+
+/* ════════ CUSTOM ════════ */
+#tab-custom{padding:0 16px 20px;}
+.fg{margin-bottom:16px;}
+.flbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;padding-left:2px;}
+.finp{width:100%;background:var(--s2);border:1px solid var(--sep);border-radius:12px;padding:13px 14px;font-size:16px;color:var(--t);outline:none;font-family:inherit;transition:border-color .2s;-webkit-appearance:none;-webkit-user-select:text;user-select:text;}
+.finp:focus{border-color:rgba(255,159,10,.5);}
+.finp::placeholder{color:var(--t3);}
+
+/* Save to preset toggle */
+.preset-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:.5px solid var(--sep);border-radius:12px;padding:13px 14px;margin-bottom:16px;}
+.preset-toggle-lbl{font-size:14px;font-weight:500;}
+.preset-toggle-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+.tog{width:51px;height:31px;border-radius:16px;background:var(--s4);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--g);}
+.tog-knob{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:left .2s cubic-bezier(.34,1.56,.64,1);}
+.tog.on .tog-knob{left:22px;}
+
+/* Duration picker */
+.dpick{background:var(--s2);border:1px solid var(--sep);border-radius:12px;display:flex;overflow:hidden;}
+.dc{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;}
+.dc+.dc{border-left:.5px solid var(--sep);}
+.dlbl{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;}
+.dct{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.dbn{width:42px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--s3);cursor:pointer;font-size:15px;color:var(--t2);border:none;transition:background .12s,transform .1s;}
+.dbn:active{background:var(--ad);transform:scale(.87);color:var(--a);}
+.dv{font-size:28px;font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:-1px;min-width:46px;text-align:center;color:var(--t);line-height:1;padding:5px 0;}
+
+/* Milestone row */
+.msr{display:flex;gap:7px;align-items:flex-end;}
+.ms-ti{width:82px;flex-shrink:0;text-align:center;padding:13px 6px;}
+.ms-mi{flex:1;}
+.abt{width:48px;height:48px;flex-shrink:0;border-radius:13px;background:var(--a);display:flex;align-items:center;justify-content:center;font-size:26px;color:#000;cursor:pointer;border:none;transition:transform .12s,opacity .12s;}
+.abt:active{transform:scale(.86);opacity:.75;}
+.msl{margin-top:9px;display:flex;flex-direction:column;gap:6px;}
+.msi{background:var(--s2);border:.5px solid var(--sep);border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:9px;animation:si .18s ease;}
+@keyframes si{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:none;}}
+.msit{font-size:12px;font-weight:700;color:var(--a);background:var(--ad);padding:3px 8px;border-radius:7px;white-space:nowrap;flex-shrink:0;}
+.msim{flex:1;font-size:13px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.msid{width:28px;height:28px;border-radius:50%;background:rgba(255,69,58,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:12px;color:var(--r);border:none;transition:background .12s,transform .11s;}
+.msid:active{background:rgba(255,69,58,.32);transform:scale(.83);}
+.savbt{width:100%;padding:16px;background:var(--a);border-radius:14px;font-size:16px;font-weight:700;color:#000;text-align:center;cursor:pointer;border:none;font-family:inherit;transition:transform .12s,opacity .12s;margin-top:4px;}
+.savbt:active{transform:scale(.967);opacity:.82;}
+.sssec{margin-top:6px;}
+.ssi{background:var(--s2);border:.5px solid var(--sep);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:9px;margin-bottom:7px;transition:opacity .12s,transform .11s;}
+.ssi:active{opacity:.65;transform:scale(.975);}
+.ssif{flex:1;min-width:0;cursor:pointer;}
+.ssit{font-size:14px;font-weight:600;}
+.ssim{font-size:11px;color:var(--t2);margin-top:1px;}
+.ssd{width:30px;height:30px;border-radius:50%;background:rgba(255,69,58,.1);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;flex-shrink:0;color:var(--r);border:none;transition:background .12s;}
+.ssd:active{background:rgba(255,69,58,.3);}
+.empty{text-align:center;padding:18px 16px;color:var(--t3);font-size:13px;}
+.div{height:.5px;background:var(--sep);margin:16px 0;}
+
+/* ════════ TIMER TAB ════════ */
+#tab-timer{padding-top:calc(max(14px,var(--st)));height:calc(100dvh - var(--nh) - var(--sb));}
+.no-ads #tab-timer{height:calc(100dvh - var(--nh) - var(--sb));}
+
+.t-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding-bottom:2px;position:relative;}
+.t-name{font-size:11px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--t3);flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 44px;}
+.t-chg{font-size:13px;font-weight:600;color:var(--a);cursor:pointer;padding:6px 0;position:absolute;right:0;}
+
+/* Reset above ring */
+.reset-above{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:7px 18px;border-radius:50px;
+  background:var(--s3);border:none;
+  cursor:pointer;flex-shrink:0;
+  font-size:12px;font-weight:600;color:var(--t2);
+  transition:opacity .15s,transform .12s;
+}
+.reset-above:active{opacity:.5;transform:scale(.92);}
+.reset-above.hidden{opacity:0;pointer-events:none;}
+
+/* Ring */
+.rw{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.rw svg{position:absolute;top:0;left:0;width:100%;height:100%;}
+.rw:active .ri{transform:scale(.96);opacity:.8;}
+.ri{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1;transition:transform .15s cubic-bezier(.34,1.56,.64,1),opacity .12s;}
+.td{font-size:68px;font-weight:100;letter-spacing:-3px;font-variant-numeric:tabular-nums;line-height:1;color:var(--t);}
+.tp2{font-size:11px;color:var(--t3);margin-top:5px;letter-spacing:.4px;}
+.tap-hint{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);margin-top:8px;opacity:1;transition:opacity .3s;}
+.tap-hint.hidden{opacity:0;}
+
+/* Banner */
+.bn{width:100%;background:var(--s2);border:.5px solid var(--sep);border-radius:16px;display:flex;align-items:center;justify-content:center;padding:14px 18px;text-align:center;flex-shrink:0;transition:background .3s,border-color .3s;}
+.bn.lit{background:var(--ad);border-color:rgba(255,159,10,.25);}
+.bn-t{font-size:14px;font-weight:500;color:var(--t2);line-height:1.45;transition:color .3s;}
+.bn.lit .bn-t{color:var(--a);}
+
+/* Next */
+.nx{font-size:11px;color:var(--t3);text-align:center;min-height:14px;padding:0 6px;flex-shrink:0;}
+.nx b{color:var(--t2);font-weight:600;}
+
+/* No session */
+.ns{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;height:100%;padding:24px;}
+.ns-ic{font-size:48px;}
+.ns-t{font-size:19px;font-weight:700;}
+.ns-d{font-size:13px;color:var(--t2);line-height:1.5;max-width:250px;}
+.ns-btn{margin-top:6px;padding:13px 28px;background:var(--a);border-radius:13px;font-size:15px;font-weight:700;color:#000;cursor:pointer;border:none;font-family:inherit;transition:transform .12s;}
+.ns-btn:active{transform:scale(.94);}
+.ns-btn.sec{background:var(--s3);color:var(--t);margin-top:4px;}
+
+/* Flash */
+#flash{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0;}
+#flash.on{animation:fp .7s ease forwards;}
+@keyframes fp{0%{opacity:0;}20%{opacity:.48;}60%{opacity:.2;}100%{opacity:0;}}
+
+/* Toast */
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-100px);background:rgba(22,22,24,.97);backdrop-filter:blur(20px);border:.5px solid var(--sep);border-radius:16px;padding:10px 18px;max-width:calc(min(100vw,430px) - 28px);z-index:9998;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .28s;opacity:0;text-align:center;width:max-content;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.tt{font-size:11px;font-weight:800;color:var(--a);letter-spacing:.3px;}
+.tm{font-size:11px;color:var(--t2);margin-top:1px;}
+
+/* Ad-free modal */
+#modal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+#modal.open{opacity:1;pointer-events:all;}
+.modal-box{width:100%;max-width:430px;background:var(--s2);border-radius:24px 24px 0 0;padding:24px 24px calc(24px + var(--sb));border-top:.5px solid var(--sep);transform:translateY(40px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+#modal.open .modal-box{transform:translateY(0);}
+.modal-pill{width:36px;height:4px;border-radius:2px;background:var(--s4);margin:0 auto 20px;}
+.modal-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:20px;}
+.modal-perks{display:flex;flex-direction:column;gap:10px;margin-bottom:22px;}
+.perk{display:flex;align-items:center;gap:10px;font-size:14px;}
+.perk-ic{font-size:18px;width:28px;text-align:center;flex-shrink:0;}
+.perk-t{color:var(--t2);}
+.modal-cta{width:100%;padding:16px;background:var(--a);border-radius:14px;font-size:16px;font-weight:700;color:#000;text-align:center;cursor:pointer;border:none;font-family:inherit;transition:transform .12s;}
+.modal-cta:active{transform:scale(.967);}
+.modal-cancel{text-align:center;padding:14px;font-size:13px;color:var(--t3);cursor:pointer;}
+.modal-cancel:active{opacity:.5;}
+
+/* Preset time picker modal */
+#preset-modal{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+#preset-modal.open{opacity:1;pointer-events:all;}
+.pm-box{width:100%;max-width:430px;background:var(--s2);border-radius:24px 24px 0 0;padding:22px 20px calc(22px + var(--sb));border-top:.5px solid var(--sep);transform:translateY(40px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-height:90dvh;overflow-y:auto;}
+#preset-modal.open .pm-box{transform:translateY(0);}
+.pm-pill{width:36px;height:4px;border-radius:2px;background:var(--s4);margin:0 auto 16px;}
+.pm-ic{font-size:32px;text-align:center;margin-bottom:6px;}
+.pm-title{font-size:19px;font-weight:700;text-align:center;margin-bottom:4px;}
+.pm-sub{font-size:12px;color:var(--t2);text-align:center;margin-bottom:18px;}
+.pm-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.pm-opt{
+  background:var(--s3);border-radius:13px;padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;border:.5px solid transparent;
+  transition:border-color .15s,background .15s;
+}
+.pm-opt.sel{border-color:var(--a);background:var(--ad);}
+.pm-opt-dur{font-size:15px;font-weight:600;}
+.pm-opt-lbl{font-size:12px;color:var(--t2);}
+.pm-chk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--s4);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;}
+.pm-opt.sel .pm-chk{background:var(--a);border-color:var(--a);}
+.pm-chk-ic{display:none;font-size:11px;color:#000;font-weight:700;}
+.pm-opt.sel .pm-chk-ic{display:block;}
+.pm-go{width:100%;padding:15px;background:var(--g);border-radius:14px;font-size:16px;font-weight:700;color:#fff;text-align:center;cursor:pointer;border:none;font-family:inherit;transition:transform .12s,opacity .12s;margin-top:2px;}
+.pm-go:active{transform:scale(.967);opacity:.82;}
+.pm-cancel{text-align:center;padding:12px;font-size:13px;color:var(--t3);cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<div id="toast"><div class="tt" id="tt"></div><div class="tm" id="tm"></div></div>
+
+<!-- Theme toggle -->
+<button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+<!-- Ad-free modal -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-pill"></div>
+    <div class="modal-title">Go Ad-Free</div>
+    <div class="modal-sub">One-time payment. No subscription. Yours forever.</div>
+    <div class="modal-perks">
+      <div class="perk"><div class="perk-ic">🚫</div><div class="perk-t">No ads, ever</div></div>
+      <div class="perk"><div class="perk-ic">⚡</div><div class="perk-t">Faster, cleaner interface</div></div>
+      <div class="perk"><div class="perk-ic">🙏</div><div class="perk-t">Support an indie developer</div></div>
+    </div>
+    <a href="https://YOUR-PAYMENT-LINK-HERE" target="_blank" style="text-decoration:none;">
+      <div class="modal-cta">Remove Ads — ₹99</div>
+    </a>
+    <div class="modal-cancel" onclick="closeModal()">Maybe later</div>
+  </div>
+</div>
+
+<!-- Preset time picker modal -->
+<div id="preset-modal">
+  <div class="pm-box">
+    <div class="pm-pill"></div>
+    <div class="pm-ic" id="pm-ic"></div>
+    <div class="pm-title" id="pm-title"></div>
+    <div class="pm-sub" id="pm-sub">Choose your session duration</div>
+    <div class="pm-opts" id="pm-opts"></div>
+    <button class="pm-go" onclick="confirmPreset()">Start Timer →</button>
+    <div class="pm-cancel" onclick="closePresetModal()">Cancel</div>
+  </div>
+</div>
+
+<div id="app">
+
+  <div id="content">
+
+    <!-- PRESETS -->
+    <div id="tab-presets" class="tp">
+      <div class="pg-t">Presets</div>
+      <div class="pg-s">Tap a routine — then pick your duration</div>
+
+      <div class="pc" onclick="openPresetModal('workout')">
+        <div class="pc-top">
+          <div class="pc-ic" style="background:rgba(255,159,10,.1)">🏋️</div>
+          <div class="pc-inf">
+            <div class="pc-tit">Full Body Workout</div>
+            <div class="pc-desc">Guided intervals with rest cues</div>
+            <div class="pc-meta"><span class="pc-badge">5 milestones</span><span class="pc-dur">20–45 min</span></div>
+          </div>
+          <div class="pc-chev">›</div>
+        </div>
+        <div class="pc-chips">
+          <span class="chip">Warm-up</span><span class="chip">First set</span><span class="chip">REST</span><span class="chip">Second set</span><span class="chip">Cool down</span>
+        </div>
+      </div>
+
+      <div class="pc" onclick="openPresetModal('water')">
+        <div class="pc-top">
+          <div class="pc-ic" style="background:rgba(10,132,255,.1)">💧</div>
+          <div class="pc-inf">
+            <div class="pc-tit">Water Break Tracker</div>
+            <div class="pc-desc">Hydration reminder every 15 minutes</div>
+            <div class="pc-meta"><span class="pc-badge" style="background:rgba(10,132,255,.13);color:#0A84FF">4 milestones</span><span class="pc-dur">30–90 min</span></div>
+          </div>
+          <div class="pc-chev">›</div>
+        </div>
+        <div class="pc-chips">
+          <span class="chip">15 min · Drink water</span><span class="chip">30 min · Hydrate</span><span class="chip">45 min · Water break</span>
+        </div>
+      </div>
+
+      <div class="pc" onclick="openPresetModal('pomodoro')">
+        <div class="pc-top">
+          <div class="pc-ic" style="background:rgba(48,209,88,.1)">🍅</div>
+          <div class="pc-inf">
+            <div class="pc-tit">Pomodoro Focus</div>
+            <div class="pc-desc">Deep work sessions with break alarms</div>
+            <div class="pc-meta"><span class="pc-badge" style="background:rgba(48,209,88,.13);color:#30D158">3 milestones</span><span class="pc-dur">25–50 min</span></div>
+          </div>
+          <div class="pc-chev">›</div>
+        </div>
+        <div class="pc-chips">
+          <span class="chip">Focus</span><span class="chip">Break alarm</span><span class="chip">Session done</span>
+        </div>
+      </div>
+
+      <div class="pc" onclick="openPresetModal('leetcode')">
+        <div class="pc-top">
+          <div class="pc-ic" style="background:rgba(255,69,58,.1)">💻</div>
+          <div class="pc-inf">
+            <div class="pc-tit">LeetCode Practice</div>
+            <div class="pc-desc">Timed coding challenge with pacing cues</div>
+            <div class="pc-meta"><span class="pc-badge" style="background:rgba(255,69,58,.13);color:#FF453A">4 milestones</span><span class="pc-dur">20–45 min</span></div>
+          </div>
+          <div class="pc-chev">›</div>
+        </div>
+        <div class="pc-chips">
+          <span class="chip">Read & plan</span><span class="chip">Code it</span><span class="chip">Optimize</span><span class="chip">Review</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CUSTOM -->
+    <div id="tab-custom" class="tp">
+      <div class="pg-t">Custom Timer</div>
+      <div class="pg-s">Build your own milestone routine</div>
+
+      <div class="fg">
+        <div class="flbl">Session Title</div>
+        <input type="text" id="c-title" class="finp" placeholder="e.g. Morning Standup" maxlength="50" autocomplete="off">
+      </div>
+
+      <div class="fg">
+        <div class="flbl">Total Duration</div>
+        <div class="dpick">
+          <div class="dc">
+            <div class="dlbl">Hours</div>
+            <div class="dct">
+              <button class="dbn" onclick="chD('h',1)">▲</button>
+              <div class="dv" id="dh">00</div>
+              <button class="dbn" onclick="chD('h',-1)">▼</button>
+            </div>
+          </div>
+          <div class="dc">
+            <div class="dlbl">Minutes</div>
+            <div class="dct">
+              <button class="dbn" onclick="chD('m',1)">▲</button>
+              <div class="dv" id="dm">25</div>
+              <button class="dbn" onclick="chD('m',-1)">▼</button>
+            </div>
+          </div>
+          <div class="dc">
+            <div class="dlbl">Seconds</div>
+            <div class="dct">
+              <button class="dbn" onclick="chD('s',1)">▲</button>
+              <div class="dv" id="ds">00</div>
+              <button class="dbn" onclick="chD('s',-1)">▼</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <div class="flbl">Milestones</div>
+        <div class="msr">
+          <input type="text" id="ms-t" class="finp ms-ti" placeholder="MM:SS" maxlength="5" inputmode="numeric">
+          <input type="text" id="ms-m" class="finp ms-mi" placeholder="Message to speak…" maxlength="100" autocomplete="off">
+          <button class="abt" onclick="addMs()">+</button>
+        </div>
+        <div id="msl" class="msl"></div>
+        <div id="ms-e" class="empty">No milestones yet</div>
+      </div>
+
+      <!-- Save to presets toggle -->
+      <div class="preset-toggle-row">
+        <div>
+          <div class="preset-toggle-lbl">Add to Presets</div>
+          <div class="preset-toggle-sub">Pin this session in Presets tab</div>
+        </div>
+        <div class="tog" id="preset-tog" onclick="togglePresetSave()"><div class="tog-knob"></div></div>
+      </div>
+
+      <button class="savbt" onclick="saveStart()">Save &amp; Start →</button>
+
+      <div class="div"></div>
+
+      <div class="sssec">
+        <div class="flbl">Saved Sessions</div>
+        <div id="ss-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Timer tab -->
+  <div id="tab-timer" class="tp">
+
+    <div id="nosess" class="ns" style="display:none">
+      <div class="ns-ic">⏱</div>
+      <div class="ns-t">No Session</div>
+      <div class="ns-d">Choose a preset or create a custom timer to begin.</div>
+      <button class="ns-btn" onclick="switchTab('custom')">Create Timer</button>
+      <button class="ns-btn sec" onclick="switchTab('presets')">Browse Presets</button>
+    </div>
+
+    <div id="tui" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+
+      <div class="t-hdr">
+        <div class="t-name" id="t-name">—</div>
+        <div class="t-chg" onclick="switchTab('presets')">Change</div>
+      </div>
+
+      <!-- Reset above ring -->
+      <button class="reset-above hidden" id="reset-above" onclick="resetTimer()">↺ Reset</button>
+
+      <!-- Ring -->
+      <div class="rw" id="rw" onclick="toggleTimer()">
+        <svg id="rsvg" viewBox="0 0 260 260">
+          <circle cx="130" cy="130" r="116" fill="none" stroke="rgba(128,128,128,0.12)" stroke-width="9"/>
+          <circle id="rfg" cx="130" cy="130" r="116"
+            fill="none" stroke="var(--g)" stroke-width="9"
+            stroke-linecap="round" stroke-dasharray="729" stroke-dashoffset="0"
+            transform="rotate(-90 130 130)"
+            style="transition:stroke-dashoffset 1s linear,stroke .5s;"/>
+        </svg>
+        <div class="ri" id="ri">
+          <div class="td" id="td">00:00</div>
+          <div class="tp2" id="tp2">Ready</div>
+          <div class="tap-hint" id="tap-hint">TAP TO START</div>
+        </div>
+      </div>
+
+      <!-- Banner -->
+      <div class="bn" id="bn"><div class="bn-t" id="bn-t">Tap the ring to begin</div></div>
+
+      <!-- Next milestone -->
+      <div class="nx" id="nx"></div>
+
+      <!-- spacer -->
+      <div style="height:4px;flex-shrink:0;"></div>
+
+    </div>
+  </div>
+
+  <!-- Ad bar -->
+  <div id="ad-bar">
+    <div class="ad-slot">Ad · milestonetimer.app</div>
+    <div class="ad-free-btn" onclick="openModal()">Remove Ads</div>
+  </div>
+
+  <!-- Nav -->
+  <nav id="nav">
+    <div class="nb" id="nav-presets" onclick="switchTab('presets')">
+      <div class="nb-ic">⚡</div>
+      <div class="nb-lbl">Presets</div>
+    </div>
+    <div class="nb" id="nav-custom" onclick="switchTab('custom')">
+      <div class="nb-ic">✏️</div>
+      <div class="nb-lbl">Custom</div>
+    </div>
+    <div class="nb active" id="nav-timer" onclick="switchTab('timer')">
+      <div class="nb-ic">⏱</div>
+      <div class="nb-lbl">Timer</div>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+// ── State ──
+let session=null, elapsed=0, ivl=null, running=false, fired=new Set();
+let cMs=[], dH=0, dM=25, dS=0;
+let saveToPreset=false;
+let pendingPresetKey=null, pendingPresetSeconds=null;
+const CIRC=2*Math.PI*116;
+
+// ── Theme ──
+let darkMode=localStorage.getItem('mt_theme')!=='light';
+function applyTheme(){
+  document.body.classList.toggle('light',!darkMode);
+  document.getElementById('theme-toggle').textContent=darkMode?'🌙':'☀️';
+  document.querySelector('meta[name="theme-color"]') && (document.querySelector('meta[name="theme-color"]').content=darkMode?'#000000':'#F2F2F7');
+}
+function toggleTheme(){
+  darkMode=!darkMode;
+  localStorage.setItem('mt_theme',darkMode?'dark':'light');
+  applyTheme();
+}
+
+// ── Preset definitions (multi-duration) ──
+const PRESET_META={
+  workout:{
+    title:"Full Body Workout",icon:"🏋️",
+    durations:[
+      {label:"20 min",seconds:1200,desc:"Quick burn",milestones:{300:"5 min · Warm-up done! Let's go!",600:"10 min · First set — push hard!",900:"15 min · Rest 30 sec. Breathe.",1100:"Just 100 sec left. Cool down!",1200:"20 min · Workout complete. Great job!"}},
+      {label:"30 min",seconds:1800,desc:"Standard",milestones:{300:"5 min · Warm-up complete! Let's go!",600:"10 min · First set — push hard!",900:"15 min · Rest 60 sec. Breathe.",1200:"20 min · Second set. You've got this!",1500:"25 min · Cool down time. Almost there!",1800:"30 min · Workout complete. Great job!"}},
+      {label:"45 min",seconds:2700,desc:"Full session",milestones:{300:"5 min · Warm-up done!",900:"15 min · First set complete — push!",1350:"22.5 min · Rest 60 sec.",1800:"30 min · Second set. Stay strong!",2400:"40 min · Cool down. Almost there!",2700:"45 min · Full session done. Amazing!"}}
+    ]
+  },
+  water:{
+    title:"Water Break Tracker",icon:"💧",
+    durations:[
+      {label:"30 min",seconds:1800,desc:"Short session",milestones:{900:"15 min · Drink water! Stay hydrated.",1800:"30 min · Final sip! Great work."}},
+      {label:"60 min",seconds:3600,desc:"Standard",milestones:{900:"15 min · Drink water! Stay hydrated.",1800:"30 min · Halfway. Drink water now!",2700:"45 min · Water break. Keep it up!",3600:"60 min · Final sip! Amazing work."}},
+      {label:"90 min",seconds:5400,desc:"Long session",milestones:{900:"15 min · Drink water!",1800:"30 min · Hydrate now!",2700:"45 min · Water break!",3600:"60 min · Halfway. Keep drinking!",4500:"75 min · Almost done. Drink up!",5400:"90 min · Session complete. Hydrated!"}}
+    ]
+  },
+  pomodoro:{
+    title:"Pomodoro Focus",icon:"🍅",
+    durations:[
+      {label:"25 min",seconds:1500,desc:"Classic Pomodoro",milestones:{720:"12 min · Stay focused. You're doing great!",1200:"20 min · Final stretch!",1500:"25 min · Work session done! Take a 5-min break."}},
+      {label:"35 min",seconds:2100,desc:"Extended focus",milestones:{600:"10 min · Deep work mode on.",1200:"20 min · Stay in the zone!",1800:"30 min · Final push!",2100:"35 min · Session done. Take a break!"}},
+      {label:"50 min",seconds:3000,desc:"Deep work block",milestones:{600:"10 min · Flow state starting.",1500:"25 min · Halfway. Stay focused!",2400:"40 min · Final 10 min. Push through!",3000:"50 min · Deep work complete. Well done!"}}
+    ]
+  },
+  leetcode:{
+    title:"LeetCode Practice",icon:"💻",
+    durations:[
+      {label:"20 min",seconds:1200,desc:"Easy problem",milestones:{180:"3 min · Read and plan your approach.",600:"10 min · Start coding. No peeking!",900:"15 min · Halfway done. Review your logic.",1200:"20 min · Time's up. Analyse your solution!"}},
+      {label:"30 min",seconds:1800,desc:"Medium problem",milestones:{300:"5 min · Understand the problem fully.",900:"15 min · Code your brute force first.",1500:"25 min · Optimise your solution now.",1800:"30 min · Time's up! Review & discuss."}},
+      {label:"45 min",seconds:2700,desc:"Hard problem",milestones:{300:"5 min · Analyse all edge cases.",900:"15 min · Brute force approach done?",1800:"30 min · Optimise time complexity.",2400:"40 min · Clean up your code.",2700:"45 min · Time's up! Excellent effort."}}
+    ]
+  }
+};
+
+// ── Custom presets (user-saved) ──
+function getCustomPresets(){try{return JSON.parse(localStorage.getItem('mt_custom_presets')||'[]');}catch{return[];}}
+function saveCustomPresets(arr){localStorage.setItem('mt_custom_presets',JSON.stringify(arr));}
+
+// ── Preset modal ──
+function openPresetModal(key){
+  pendingPresetKey=key;pendingPresetSeconds=null;
+  const meta=PRESET_META[key];
+  document.getElementById('pm-ic').textContent=meta.icon;
+  document.getElementById('pm-title').textContent=meta.title;
+  document.getElementById('pm-sub').textContent='Choose your session duration';
+  const opts=document.getElementById('pm-opts');
+  opts.innerHTML='';
+  meta.durations.forEach((d,i)=>{
+    const el=document.createElement('div');
+    el.className='pm-opt'+(i===1?' sel':'');
+    if(i===1)pendingPresetSeconds=d.seconds;
+    el.innerHTML=`<div><div class="pm-opt-dur">${d.label}</div><div class="pm-opt-lbl">${d.desc}</div></div><div class="pm-chk"><span class="pm-chk-ic">✓</span></div>`;
+    el.onclick=()=>{
+      document.querySelectorAll('#pm-opts .pm-opt').forEach(o=>o.classList.remove('sel'));
+      el.classList.add('sel');
+      pendingPresetSeconds=d.seconds;
+    };
+    opts.appendChild(el);
+  });
+  if(!pendingPresetSeconds){pendingPresetSeconds=meta.durations[0].seconds;opts.children[0].classList.add('sel');}
+  document.getElementById('preset-modal').classList.add('open');
+}
+function closePresetModal(){document.getElementById('preset-modal').classList.remove('open');}
+document.getElementById('preset-modal').addEventListener('click',function(e){if(e.target===this)closePresetModal();});
+
+function confirmPreset(){
+  if(!pendingPresetKey||!pendingPresetSeconds)return;
+  const meta=PRESET_META[pendingPresetKey];
+  const dur=meta.durations.find(d=>d.seconds===pendingPresetSeconds)||meta.durations[0];
+  session={title:meta.title,totalSeconds:dur.seconds,milestones:dur.milestones};
+  saveLast();closePresetModal();
+  switchTab('timer');
+  resetTimer(false);
+  setTimeout(()=>startT(),300);
+}
+
+// ── Ad-free ──
+let adFree=localStorage.getItem('mt_adfree')==='1';
+function applyAdFree(){
+  if(adFree){document.getElementById('ad-bar').style.display='none';document.body.classList.add('no-ads');}
+}
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+function grantAdFree(){localStorage.setItem('mt_adfree','1');adFree=true;applyAdFree();closeModal();toast('🎉 Ad-free!','Thanks for your support.');}
+
+// ── Ring sizing ──
+function sizeRing(){
+  const w=document.getElementById('rw');
+  const sz=Math.min(window.innerWidth-40,280);
+  w.style.width=sz+'px';w.style.height=sz+'px';
+  document.getElementById('ri').style.width=sz+'px';
+  document.getElementById('ri').style.height=sz+'px';
+  document.getElementById('td').style.fontSize=Math.max(48,Math.round(sz*.265))+'px';
+}
+window.addEventListener('resize',sizeRing);sizeRing();
+
+// ── Init ──
+function init(){
+  document.getElementById('dh').textContent=pad(dH);
+  document.getElementById('dm').textContent=pad(dM);
+  document.getElementById('ds').textContent=pad(dS);
+  try{const last=localStorage.getItem('mt_last');if(last){const s=JSON.parse(last);if(s&&s.title&&s.totalSeconds)session=s;}}catch(e){}
+  applyAdFree();applyTheme();
+  switchTab('timer');
+  renderMsl();renderCustomPresets();
+}
+
+// ── Tabs ──
+function switchTab(tab){
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  document.getElementById('nav-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='timer')renderTimerUI();
+  if(tab==='custom'){renderSaved();renderCustomPresets();}
+  if(tab!=='timer')document.getElementById('content').scrollTop=0;
+}
+
+// ── Custom ──
+function chD(u,d){
+  if(u==='h'){dH=Math.max(0,Math.min(23,dH+d));document.getElementById('dh').textContent=pad(dH);}
+  else if(u==='m'){dM=Math.max(0,Math.min(59,dM+d));document.getElementById('dm').textContent=pad(dM);}
+  else{dS=Math.max(0,Math.min(59,dS+d));document.getElementById('ds').textContent=pad(dS);}
+}
+function addMs(){
+  const ti=document.getElementById('ms-t').value.trim();
+  const mi=document.getElementById('ms-m').value.trim();
+  if(!ti||!mi){toast('⚠️','Enter time and message');return;}
+  let sec=0;
+  if(ti.includes(':')){const p=ti.split(':');sec=parseInt(p[0]||0)*60+parseInt(p[1]||0);}
+  else{sec=parseInt(ti)||0;}
+  if(isNaN(sec)||sec<0){toast('⚠️','Use MM:SS format');return;}
+  cMs.push({time:sec,msg:mi});cMs.sort((a,b)=>a.time-b.time);
+  document.getElementById('ms-t').value='';document.getElementById('ms-m').value='';
+  renderMsl();
+}
+function delMs(i){cMs.splice(i,1);renderMsl();}
+function renderMsl(){
+  const l=document.getElementById('msl'),e=document.getElementById('ms-e');
+  l.innerHTML='';
+  if(!cMs.length){e.style.display='block';return;}
+  e.style.display='none';
+  cMs.forEach((ms,i)=>{
+    const d=document.createElement('div');d.className='msi';
+    d.innerHTML=`<span class="msit">${fmtT(ms.time)}</span><span class="msim">${esc(ms.msg)}</span><button class="msid" onclick="delMs(${i})">✕</button>`;
+    l.appendChild(d);
+  });
+}
+let saveToPresetOn=false;
+function togglePresetSave(){
+  saveToPresetOn=!saveToPresetOn;
+  document.getElementById('preset-tog').classList.toggle('on',saveToPresetOn);
+}
+function saveStart(){
+  const title=document.getElementById('c-title').value.trim()||'Custom Session';
+  const total=dH*3600+dM*60+dS;
+  if(!total){toast('⚠️','Set a duration');return;}
+  const ms={};cMs.forEach(m=>{ms[m.time]=m.msg;});
+  const s={title,totalSeconds:total,milestones:ms};
+  const saved=getSaved();saved[Date.now()]=s;
+  localStorage.setItem('mt_sessions',JSON.stringify(saved));
+
+  if(saveToPresetOn){
+    const cps=getCustomPresets();
+    cps.push({title,totalSeconds:total,milestones:ms,icon:'✨'});
+    saveCustomPresets(cps);
+    toast('Saved','Added to Presets tab too!');
+  }
+
+  session=JSON.parse(JSON.stringify(s));saveLast();
+  switchTab('timer');
+  resetTimer(false);
+  setTimeout(()=>startT(),300);
+}
+
+function getSaved(){try{return JSON.parse(localStorage.getItem('mt_sessions')||'{}');}catch{return {};}}
+function renderSaved(){
+  const c=document.getElementById('ss-list'),saved=getSaved(),keys=Object.keys(saved).reverse();
+  if(!keys.length){c.innerHTML='<div class="empty">No saved sessions yet</div>';return;}
+  c.innerHTML='';
+  keys.forEach(id=>{
+    const s=saved[id],mc=Object.keys(s.milestones).length,d=document.createElement('div');
+    d.className='ssi';
+    d.innerHTML=`<div class="ssif" onclick="loadSaved('${id}')"><div class="ssit">${esc(s.title)}</div><div class="ssim">${fmtT(s.totalSeconds)} · ${mc} milestone${mc!==1?'s':''}</div></div><button class="ssd" onclick="delSaved('${id}')">✕</button>`;
+    c.appendChild(d);
+  });
+}
+function renderCustomPresets(){
+  // Inject custom presets as cards in the presets tab
+  const existing=document.getElementById('custom-preset-cards');
+  if(existing)existing.remove();
+  const cps=getCustomPresets();
+  if(!cps.length)return;
+  const container=document.createElement('div');
+  container.id='custom-preset-cards';
+  const lbl=document.createElement('div');lbl.className='pg-s';lbl.style.paddingTop='4px';lbl.textContent='Your Custom Presets';
+  container.appendChild(lbl);
+  cps.forEach((cp,i)=>{
+    const mc=Object.keys(cp.milestones).length;
+    const d=document.createElement('div');d.className='pc';
+    d.innerHTML=`<div class="pc-top"><div class="pc-ic" style="background:var(--s3);font-size:20px">${cp.icon||'✨'}</div><div class="pc-inf"><div class="pc-tit">${esc(cp.title)}</div><div class="pc-desc">${fmtT(cp.totalSeconds)} · ${mc} milestone${mc!==1?'s':''}</div></div><div class="pc-chev" onclick="event.stopPropagation();delCustomPreset(${i})" style="color:var(--r);font-size:14px;padding:4px">✕</div></div>`;
+    d.onclick=()=>{session=JSON.parse(JSON.stringify(cp));saveLast();switchTab('timer');resetTimer(false);setTimeout(()=>startT(),300);};
+    container.appendChild(d);
+  });
+  document.getElementById('tab-presets').appendChild(container);
+}
+function delCustomPreset(i){const cps=getCustomPresets();cps.splice(i,1);saveCustomPresets(cps);renderCustomPresets();}
+function loadSaved(id){const s=getSaved();if(!s[id])return;session=JSON.parse(JSON.stringify(s[id]));saveLast();switchTab('timer');resetTimer(false);setTimeout(()=>startT(),300);}
+function delSaved(id){const s=getSaved();delete s[id];localStorage.setItem('mt_sessions',JSON.stringify(s));renderSaved();}
+function saveLast(){if(session)localStorage.setItem('mt_last',JSON.stringify(session));}
+
+// ── Timer UI ──
+function renderTimerUI(){
+  const ns=document.getElementById('nosess'),tu=document.getElementById('tui');
+  if(!session){ns.style.display='flex';tu.style.display='none';return;}
+  ns.style.display='none';tu.style.display='flex';
+  updDisp();updRing();updNext();
+}
+function toggleTimer(){
+  if(!session)return;
+  if(elapsed>=session.totalSeconds){resetTimer(false);return;}
+  running?pauseT():startT();
+}
+function startT(){
+  running=true;
+  document.getElementById('tap-hint').classList.add('hidden');
+  document.getElementById('reset-above').classList.remove('hidden');
+  setBn('Tap ring to pause',false);
+  ivl=setInterval(()=>{
+    elapsed++;updDisp();updRing();checkMs();updNext();
+    if(elapsed>=session.totalSeconds){pauseT();onDone();}
+  },1000);
+}
+function pauseT(){
+  running=false;clearInterval(ivl);ivl=null;
+  const done=elapsed>=session.totalSeconds;
+  document.getElementById('tap-hint').classList.add('hidden');
+  document.getElementById('reset-above').classList.remove('hidden');
+  setBn(done?'🎉 Complete! Tap ↺ to reset':'Paused · Tap ring to resume',done);
+}
+function resetTimer(keep=true){
+  clearInterval(ivl);ivl=null;running=false;elapsed=0;fired=new Set();
+  document.getElementById('tap-hint').classList.remove('hidden');
+  document.getElementById('reset-above').classList.add('hidden');
+  setBn('Tap the ring to begin',false);
+  document.getElementById('nx').innerHTML='';
+  updDisp();updRing();updNext();
+}
+function onDone(){
+  speak(session.title+' complete! Great work!');
+  flash('#30D158');toast('✅ Done!',session.title+' complete!');
+  setBn('🎉 Session complete! Tap ↺ to reset',true);
+}
+function updDisp(){
+  if(!session)return;
+  const rem=Math.max(0,session.totalSeconds-elapsed);
+  document.getElementById('td').textContent=fmtT(rem);
+  document.getElementById('t-name').textContent=session.title.toUpperCase();
+  const pct=Math.round(elapsed/session.totalSeconds*100);
+  document.getElementById('tp2').textContent=running?pct+'% elapsed':elapsed===0?'Tap to start':'Paused · '+pct+'%';
+}
+function updRing(){
+  if(!session)return;
+  const p=elapsed/session.totalSeconds;
+  const fg=document.getElementById('rfg');
+  fg.style.strokeDashoffset=CIRC*(1-p);
+  fg.style.stroke=p>.85?'var(--r)':p>.5?'var(--a)':'var(--g)';
+}
+function checkMs(){
+  if(!session)return;
+  Object.keys(session.milestones).map(Number).forEach(s=>{
+    if(elapsed===s&&!fired.has(s)){fired.add(s);trigMs(s,session.milestones[s]);}
+  });
+}
+function trigMs(s,msg){
+  const b=document.getElementById('bn');b.classList.remove('lit');void b.offsetWidth;b.classList.add('lit');
+  document.getElementById('bn-t').textContent=msg;
+  toast('⏰ '+fmtT(s),msg);flash('var(--a)');speak(msg);
+}
+function updNext(){
+  if(!session){document.getElementById('nx').innerHTML='';return;}
+  const keys=Object.keys(session.milestones).map(Number).sort((a,b)=>a-b);
+  const nxt=keys.find(s=>s>elapsed);
+  const el=document.getElementById('nx');
+  if(nxt!==undefined){
+    const msg=session.milestones[nxt];
+    el.innerHTML=`Next in <b>${fmtT(nxt-elapsed)}</b> · ${esc(msg.slice(0,34))}${msg.length>34?'…':''}`;
+  }else el.innerHTML='';
+}
+function setBn(msg,lit){
+  const b=document.getElementById('bn');
+  b.classList.toggle('lit',lit);
+  document.getElementById('bn-t').textContent=msg;
+}
+
+// ── Effects ──
+function flash(col){
+  const f=document.getElementById('flash');f.style.background=col;
+  f.classList.remove('on');void f.offsetWidth;f.classList.add('on');
+  f.addEventListener('animationend',()=>f.classList.remove('on'),{once:true});
+}
+function speak(txt){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt);u.rate=.91;u.pitch=1;u.volume=1;
+  const vs=window.speechSynthesis.getVoices();
+  const v=vs.find(v=>v.lang.startsWith('en')&&v.name.includes('Samantha'))
+         ||vs.find(v=>v.lang.startsWith('en')&&!v.name.toLowerCase().includes('google'))
+         ||vs.find(v=>v.lang.startsWith('en'));
+  if(v)u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+let _tt;
+function toast(title,msg){
+  const el=document.getElementById('toast');
+  document.getElementById('tt').textContent=title;
+  document.getElementById('tm').textContent=msg;
+  el.classList.add('show');clearTimeout(_tt);
+  _tt=setTimeout(()=>el.classList.remove('show'),3200);
+}
+
+// ── Utils ──
+function fmtT(s){s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),sc=s%60;return h>0?`${pad(h)}:${pad(m)}:${pad(sc)}`:`${pad(m)}:${pad(sc)}`;}
+function pad(n){return String(n).padStart(2,'0');}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Milestone time auto-format ──
+const mstIn=document.getElementById('ms-t');
+let _ml=0;
+mstIn.addEventListener('input',function(){
+  let v=this.value.replace(/[^0-9:]/g,'');
+  if(v.length===2&&!v.includes(':')&&_ml<v.length)v+=':';
+  _ml=v.length;this.value=v;
+});
+
+// ── Speech preload ──
+if(window.speechSynthesis){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+}
+
+init();
+</script>
+</body>
+</html>
