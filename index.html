@@ -499,6 +499,7 @@ input{user-select:text;-webkit-user-select:text;}
 
 <script>
 // ── State ──
+import { Analytics } from "@vercel/analytics/next"
 let session=null, elapsed=0, ivl=null, running=false, fired=new Set();
 let cMs=[], dH=0, dM=25, dS=0;
 let saveToPreset=false;
